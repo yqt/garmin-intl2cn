@@ -1,0 +1,9 @@
+package config
+
+var (
+	GarminEmail      = ""
+	GarminPassword   = ""
+
+	GarminCnEmail    = ""
+	GarminCnPassword = ""
+)
