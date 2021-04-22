@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"github.com/yqt/garmin-intl2cn/config"
@@ -31,5 +32,6 @@ func genSyncHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": suc,
 		"message": msg,
+		"error":   fmt.Sprintf("%v", err),
 	})
 }
