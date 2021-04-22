@@ -29,7 +29,7 @@ func genSyncHandler(c *gin.Context) {
 		"err": err,
 	}).Info("sync result")
 
-	c.JSON(http.StatusOK, gin.H{
+	c.PureJSON(http.StatusOK, gin.H{
 		"success": suc,
 		"message": msg,
 		"error":   fmt.Sprintf("%v", err),
