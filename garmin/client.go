@@ -7,6 +7,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/yqt/garmin-intl2cn/util"
 	"io"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -55,7 +56,8 @@ func SetEnv(apiHost string, ssoPrefix string) Option {
 
 func NewClient(options ...Option) *Client {
 	client := &Client{
-		client: util.NewCookieRequest(),
+		client:   util.NewCookieRequest(),
+		loggedIn: false,
 	}
 
 	client.SetOptions(options...)
@@ -115,6 +117,9 @@ func (c *Client) Auth(reLogin bool) error {
 	headers["Origin"] = c.SsoPrefix
 	c.client.SetHeaders(headers)
 	respText, err = c.client.Post(uri, params, formData, nil, false)
+	if err != nil {
+		return err
+	}
 
 	ticketUrl, err := c.extractTicketUrl(respText)
 	if err != nil {
@@ -127,6 +132,7 @@ func (c *Client) Auth(reLogin bool) error {
 	respText, err = c.client.Get(ticketUrl, nil)
 	socialProfileText, err := c.extractSocialProfile(respText)
 	if err != nil {
+		c.loggedIn = false
 		return err
 	}
 	logrus.WithFields(logrus.Fields{
@@ -224,11 +230,16 @@ func (c *Client) extractCSRFToken(respText string) (string, error) {
 }
 
 func (c *Client) extractTicketUrl(respText string) (string, error) {
-	t := regexp.MustCompile(`https:\\\/\\\/` + c.ApiHost + `\\\/modern(\\\/)?\?ticket=(([a-zA-Z0-9]|-)*)`)
+	//t := regexp.MustCompile(`https:\\\/\\\/` + c.ApiHost + `\\\/modern(\\\/)?\?ticket=(([a-zA-Z0-9]|-)*)`)
+	t := regexp.MustCompile(`https(.+?)modern(%2F)?\?ticket=(([a-zA-Z0-9]|-)*)`)
 	ticketUrl := t.FindString(respText)
 
 	// NOTE: undo escaping
-	ticketUrl = strings.Replace(ticketUrl, "\\/", "/", -1)
+	//ticketUrl = strings.Replace(ticketUrl, "\\/", "/", -1)
+	ticketUrl, err := url.QueryUnescape(ticketUrl)
+	if err != nil {
+		return "", err
+	}
 
 	if ticketUrl == "" {
 		return "", errors.New("wrong credentials")

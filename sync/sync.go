@@ -42,15 +42,21 @@ func SynchronizeLatestActivities(userInfo UserInfo) (bool, string, error) {
 
 	var (
 		intlActivityList []garmin.ActivityListItem
-		cnActivityList []garmin.ActivityListItem
-		err error
+		cnActivityList   []garmin.ActivityListItem
+		err              error
 	)
 
 	count := 0
+	var lastErr error
 	for count < 2 {
 		select {
 		case err := <-errChan:
-			return false, "", err
+			count++
+			logrus.WithFields(logrus.Fields{
+				"err": err,
+			}).Error("get activity list failed")
+			lastErr = err
+			//return false, "", err
 		case actWrapper := <-actChan:
 			switch actWrapper.Type {
 			case ActivityListWrapperTypeIntl:
@@ -62,6 +68,10 @@ func SynchronizeLatestActivities(userInfo UserInfo) (bool, string, error) {
 			}
 		}
 
+	}
+
+	if lastErr != nil {
+		return false, "", lastErr
 	}
 
 	succeedActivityIds := make([]int64, 0)
@@ -130,7 +140,7 @@ func getActivityList(client *garmin.Client, start int64, limit int64, actType in
 	}
 	activityListWrapper := ActivityListWrapper{
 		ActivityList: activityList,
-		Type: actType,
+		Type:         actType,
 	}
 	resultChan <- activityListWrapper
 }
