@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"errors"
+	"fmt"
 	"github.com/sirupsen/logrus"
 	"github.com/yqt/garmin-intl2cn/util"
 	"io"
@@ -23,7 +24,7 @@ const (
 	ApiServiceHostCn = "connect.garmin.cn"
 	SsoPrefix        = "https://sso.garmin.com"
 	SsoPrefixCn      = "https://sso.garmin.cn"
-	UserAgent        = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36"
+	UserAgent        = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36"
 )
 
 type Client struct {
@@ -115,6 +116,11 @@ func (c *Client) Auth(reLogin bool) error {
 		"_csrf":    csrfToken,
 	}
 	headers["Origin"] = c.SsoPrefix
+	q := url.Values{}
+	for key, val := range params {
+		q.Set(key, fmt.Sprintf("%v", val))
+	}
+	headers["Referer"] = uri + "?" + q.Encode()
 	c.client.SetHeaders(headers)
 	respText, err = c.client.Post(uri, params, formData, nil, false)
 	if err != nil {
@@ -230,16 +236,16 @@ func (c *Client) extractCSRFToken(respText string) (string, error) {
 }
 
 func (c *Client) extractTicketUrl(respText string) (string, error) {
-	//t := regexp.MustCompile(`https:\\\/\\\/` + c.ApiHost + `\\\/modern(\\\/)?\?ticket=(([a-zA-Z0-9]|-)*)`)
-	t := regexp.MustCompile(`https(.+?)modern(%2F)?\?ticket=(([a-zA-Z0-9]|-)*)`)
+	t := regexp.MustCompile(`https:\\\/\\\/` + c.ApiHost + `\\\/modern(\\\/)?\?ticket=(([a-zA-Z0-9]|-)*)`)
+	//t := regexp.MustCompile(`https(.+?)modern(%2F)?\?ticket=(([a-zA-Z0-9]|-)*)`)
 	ticketUrl := t.FindString(respText)
 
 	// NOTE: undo escaping
-	//ticketUrl = strings.Replace(ticketUrl, "\\/", "/", -1)
-	ticketUrl, err := url.QueryUnescape(ticketUrl)
-	if err != nil {
-		return "", err
-	}
+	ticketUrl = strings.Replace(ticketUrl, "\\/", "/", -1)
+	//ticketUrl, err := url.QueryUnescape(ticketUrl)
+	//if err != nil {
+	//	return "", err
+	//}
 
 	if ticketUrl == "" {
 		return "", errors.New("wrong credentials")

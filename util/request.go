@@ -2,6 +2,7 @@ package util
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -37,6 +38,13 @@ func NewCookieRequest() *CookieRequest {
 	client := &http.Client{
 		Jar:     jar,
 		Timeout: time.Second * 30,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				// To avoid a Cloudflare error, we have to use TLS 1.1 or 1.2.
+				MinVersion: tls.VersionTLS11,
+				MaxVersion: tls.VersionTLS12,
+			},
+		},
 	}
 	return &CookieRequest{
 		headers: make(map[string]string),
