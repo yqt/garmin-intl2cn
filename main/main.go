@@ -14,6 +14,18 @@ func main() {
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
 
+	logLvlStr := os.Getenv("LOG_LEVEL")
+	var logLvl logrus.Level
+	switch logLvlStr {
+	case "debug":
+		logLvl = logrus.DebugLevel
+	case "info":
+		logLvl = logrus.InfoLevel
+	default:
+		logLvl = logrus.InfoLevel
+	}
+	logrus.SetLevel(logLvl)
+
 	port := os.Getenv("PORT")
 
 	if port == "" {

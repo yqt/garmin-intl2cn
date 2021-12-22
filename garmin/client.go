@@ -136,13 +136,13 @@ func (c *Client) Auth(reLogin bool) error {
 	}).Debug()
 
 	respText, err = c.client.Get(ticketUrl, nil)
-	socialProfileText, err := c.extractSocialProfile(respText)
+	err = c.checkSocialProfileExisted(respText)
 	if err != nil {
 		c.loggedIn = false
 		return err
 	}
 	logrus.WithFields(logrus.Fields{
-		"socialProfileText": socialProfileText,
+		"checkSocialProfileExisted": true,
 	}).Debug()
 
 	c.loggedIn = true
@@ -252,6 +252,15 @@ func (c *Client) extractTicketUrl(respText string) (string, error) {
 	}
 
 	return ticketUrl, nil
+}
+
+func (c *Client) checkSocialProfileExisted(respText string) error {
+	fragment := `window.VIEWER_SOCIAL_PROFILE`
+	startPos := strings.Index(respText, fragment)
+	if startPos == -1 {
+		return errors.New("social profile not found")
+	}
+	return nil
 }
 
 func (c *Client) extractSocialProfile(respText string) (string, error) {
