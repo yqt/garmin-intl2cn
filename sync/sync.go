@@ -37,7 +37,7 @@ func SynchronizeLatestActivities(userInfo UserInfo) (bool, string, error) {
 	actChan := make(chan ActivityListWrapper)
 	defer close(actChan)
 
-	go getActivityList(clientIntl, 0, 3, ActivityListWrapperTypeIntl, actChan, errChan)
+	go getActivityList(clientIntl, 0, 5, ActivityListWrapperTypeIntl, actChan, errChan)
 	go getActivityList(clientCn, 0, 10, ActivityListWrapperTypeCn, actChan, errChan)
 
 	var (

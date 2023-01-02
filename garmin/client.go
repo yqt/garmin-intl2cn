@@ -94,6 +94,7 @@ func (c *Client) Auth(reLogin bool) error {
 	uri := c.SsoPrefix + "/sso/signin"
 	headers := map[string]string{
 		"User-Agent": UserAgent,
+		"NK":         "NT",
 	}
 	c.client.SetHeaders(headers)
 
@@ -136,13 +137,15 @@ func (c *Client) Auth(reLogin bool) error {
 	}).Debug()
 
 	respText, err = c.client.Get(ticketUrl, nil)
-	socialProfileText, err := c.extractSocialProfile(respText)
+	//socialProfileText, err := c.extractSocialProfile(respText)
+	hasSocialProfileText, err := c.checkSocialProfile(respText)
 	if err != nil {
 		c.loggedIn = false
 		return err
 	}
 	logrus.WithFields(logrus.Fields{
-		"socialProfileText": socialProfileText,
+		//"socialProfileText": socialProfileText,
+		"hasSocialProfileText": hasSocialProfileText,
 	}).Debug()
 
 	c.loggedIn = true
@@ -268,4 +271,13 @@ func (c *Client) extractSocialProfile(respText string) (string, error) {
 	restText = restText[len(fragment):endPos]
 	restText = strings.Replace(restText, "\\", "", -1)
 	return restText, nil
+}
+
+func (c *Client) checkSocialProfile(respText string) (bool, error) {
+	fragment := "window.VIEWER_SOCIAL_PROFILE"
+	startPos := strings.Index(respText, fragment)
+	if startPos == -1 {
+		return false, errors.New("social profile not found")
+	}
+	return true, nil
 }
