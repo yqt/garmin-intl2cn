@@ -137,15 +137,13 @@ func (c *Client) Auth(reLogin bool) error {
 	}).Debug()
 
 	respText, err = c.client.Get(ticketUrl, nil)
-	//socialProfileText, err := c.extractSocialProfile(respText)
-	hasSocialProfileText, err := c.checkSocialProfile(respText)
+	err = c.checkSocialProfileExisted(respText)
 	if err != nil {
 		c.loggedIn = false
 		return err
 	}
 	logrus.WithFields(logrus.Fields{
-		//"socialProfileText": socialProfileText,
-		"hasSocialProfileText": hasSocialProfileText,
+		"checkSocialProfileExisted": true,
 	}).Debug()
 
 	c.loggedIn = true
@@ -257,6 +255,15 @@ func (c *Client) extractTicketUrl(respText string) (string, error) {
 	return ticketUrl, nil
 }
 
+func (c *Client) checkSocialProfileExisted(respText string) error {
+	fragment := `window.VIEWER_SOCIAL_PROFILE`
+	startPos := strings.Index(respText, fragment)
+	if startPos == -1 {
+		return errors.New("social profile not found")
+	}
+	return nil
+}
+
 func (c *Client) extractSocialProfile(respText string) (string, error) {
 	fragment := `window.VIEWER_SOCIAL_PROFILE = JSON.parse("`
 	startPos := strings.Index(respText, fragment)
@@ -271,13 +278,4 @@ func (c *Client) extractSocialProfile(respText string) (string, error) {
 	restText = restText[len(fragment):endPos]
 	restText = strings.Replace(restText, "\\", "", -1)
 	return restText, nil
-}
-
-func (c *Client) checkSocialProfile(respText string) (bool, error) {
-	fragment := "window.VIEWER_SOCIAL_PROFILE"
-	startPos := strings.Index(respText, fragment)
-	if startPos == -1 {
-		return false, errors.New("social profile not found")
-	}
-	return true, nil
 }
